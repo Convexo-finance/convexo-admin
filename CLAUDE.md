@@ -28,6 +28,9 @@ convexo-admin/
 │   ├── page.tsx            — Login page (MetaMask → SIWE → JWT)
 │   ├── globals.css         — Tailwind base + .card / .btn-* utilities
 │   ├── providers.tsx       — WagmiProvider + QueryClientProvider
+│   ├── api/
+│   │   └── upload-pinata/
+│   │       └── metadata/route.ts — Proxies metadata JSON upload to Pinata (uses server-side PINATA_JWT)
 │   └── dashboard/
 │       ├── layout.tsx      — Auth guard (redirect → / if no JWT)
 │       └── page.tsx        — Main admin panel (sidebar + 8 tabs)
@@ -47,6 +50,8 @@ convexo-admin/
 │   ├── api.ts              — apiFetch + JWT + silent refresh (key: convexo_admin_jwt)
 │   ├── auth.ts             — signInAdmin() + signOutAdmin() via SIWE
 │   ├── wagmi.ts            — createConfig (Base, Mainnet, Sepolia — injected + MetaMask)
+│   ├── config/
+│   │   └── pinata.ts       — IPFS helpers + LP/Business metadata builders (synced from convexo_frontend)
 │   ├── contracts/
 │   │   ├── addresses.ts    — Copied from convexo_frontend (same contract addresses)
 │   │   ├── abis.ts         — Copied from convexo_frontend
@@ -99,12 +104,16 @@ npm run dev     # ✅ next dev --webpack --port 3002
 npx next dev    # ❌ Turbopack — breaks thread-stream
 ```
 
-### 5. contracts/ and abis/ are copies from convexo_frontend
+### 5. contracts/, abis/, and lib/config/ are copies from convexo_frontend
 
 When contracts are redeployed and addresses change:
 1. Update `convexo_frontend/lib/contracts/addresses.ts`
 2. Copy the updated file to `convexo-admin/lib/contracts/addresses.ts`
 3. Same for `abis.ts` and the `abis/` directory
+
+When NFT metadata or IPFS image hashes change:
+1. Update `convexo_frontend/lib/config/pinata.ts`
+2. Copy the relevant changes to `convexo-admin/lib/config/pinata.ts`
 
 Do NOT diverge these files — they must stay in sync.
 
@@ -172,6 +181,12 @@ PUT  /admin/funding/requests/:id/review    — approve/reject funding request
 NEXT_PUBLIC_API_URL=http://localhost:3001           # backend URL
 NEXT_PUBLIC_PINATA_GATEWAY=lime-famous-condor-7.mypinata.cloud
 NEXT_PUBLIC_NETWORK_MODE=testnet                   # mainnet | testnet
+
+# Server-side only — for /api/upload-pinata/metadata route
+# Use PINATA_JWT (preferred) OR both PINATA_API_KEY + PINATA_SECRET_KEY
+PINATA_JWT=
+PINATA_API_KEY=
+PINATA_SECRET_KEY=
 ```
 
 ---

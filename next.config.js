@@ -4,6 +4,8 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       'thread-stream': false,
+      'pino-pretty': false,
+      '@react-native-async-storage/async-storage': false,
     };
     return config;
   },
