@@ -17,3 +17,10 @@ dist/
 .DS_Store
 *.pem
 npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude Code
+CLAUDE.local.md
+mcp.json
