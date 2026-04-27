@@ -26,8 +26,10 @@ export async function signInAdmin(
 ): Promise<{ accessToken: string; user: VerifyResponse['data']['user'] }> {
   // 1. Get nonce
   const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${address}`);
-  const nonceData: NonceResponse = await nonceRes.json();
-  const nonce = nonceData.data.nonce;
+  if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
+  const nonceData = await nonceRes.json();
+  const nonce: string = nonceData?.data?.nonce ?? nonceData?.nonce;
+  if (!nonce) throw new Error('Invalid nonce response from server');
 
   // 2. Build SIWE message
   const message = createSiweMessage({
