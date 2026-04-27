@@ -10,20 +10,13 @@ import { apiFetch, clearTokens } from './api';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const JWT_KEY = 'convexo_admin_jwt';
 
-interface NonceResponse { data: { nonce: string } }
-interface VerifyResponse {
-  data: {
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; walletAddress: string; accountType: string };
-  };
-}
+interface UserPayload { id: string; walletAddress: string; accountType: string }
 
 export async function signInAdmin(
   address: `0x${string}`,
   chainId: number,
   provider: { request: (args: { method: string; params: unknown[] }) => Promise<unknown> },
-): Promise<{ accessToken: string; user: VerifyResponse['data']['user'] }> {
+): Promise<{ accessToken: string; user: UserPayload }> {
   // 1. Get nonce
   const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${address}`);
   if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
@@ -60,12 +53,16 @@ export async function signInAdmin(
     throw new Error(err.error ?? 'Sign-in failed');
   }
 
-  const { data }: VerifyResponse = await verifyRes.json();
+  const body = await verifyRes.json();
+  const payload = body?.data ?? body;
+  const { accessToken, refreshToken, user } = payload;
 
-  localStorage.setItem(JWT_KEY, data.accessToken);
-  localStorage.setItem('convexo_admin_refresh', data.refreshToken);
+  if (!accessToken) throw new Error('No access token in verify response');
 
-  return { accessToken: data.accessToken, user: data.user };
+  localStorage.setItem(JWT_KEY, accessToken);
+  localStorage.setItem('convexo_admin_refresh', refreshToken);
+
+  return { accessToken, user };
 }
 
 export async function signOutAdmin(): Promise<void> {

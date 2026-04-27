@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev*)",
+      "Bash(npm run build*)",
+      "Bash(npm run type-check*)",
+      "Bash(npx tsc*)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(cat *)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git reset*)",
+      "Bash(git checkout --*)",
+      "Bash(git clean*)",
+      "Bash(rm -rf*)",
+      "Bash(npm install*)",
+      "Bash(npm uninstall*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-code-change.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
