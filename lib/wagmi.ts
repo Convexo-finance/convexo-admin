@@ -1,17 +1,9 @@
-import { createConfig, http } from 'wagmi';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, base, sepolia } from 'wagmi/chains';
-import { injected, metaMask } from 'wagmi/connectors';
 
-export const wagmiConfig = createConfig({
+export const wagmiConfig = getDefaultConfig({
+  appName: 'Convexo Admin',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID',
   chains: [base, mainnet, sepolia],
-  connectors: [
-    injected(),
-    metaMask(),
-  ],
-  transports: {
-    [base.id]: http(),
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-  },
   ssr: true,
 });

@@ -2,22 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useConnect, useChainId } from 'wagmi';
-import { metaMask } from 'wagmi/connectors';
+import { useAccount, useChainId } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { signInAdmin } from '@/lib/auth';
 import { getToken } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, connector } = useAccount();
   const chainId = useChainId();
-  const { connect } = useConnect();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already signed in, redirect to dashboard
   useEffect(() => {
     if (getToken()) {
       router.replace('/dashboard');
@@ -25,15 +23,14 @@ export default function LoginPage() {
   }, [router]);
 
   async function handleSignIn() {
-    if (!address) return;
+    if (!address || !connector) return;
     setLoading(true);
     setError(null);
     try {
-      // Get the EIP-1193 provider from the connector
-      const provider = await (window as { ethereum?: { request: (a: unknown) => Promise<unknown> } }).ethereum;
-      if (!provider) throw new Error('No injected wallet found');
-
-      await signInAdmin(address, chainId, provider as Parameters<typeof signInAdmin>[2]);
+      const provider = await connector.getProvider() as {
+        request: (args: { method: string; params: unknown[] }) => Promise<unknown>;
+      };
+      await signInAdmin(address, chainId, provider);
       router.replace('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed');
@@ -62,12 +59,9 @@ export default function LoginPage() {
           )}
 
           {!isConnected ? (
-            <button
-              onClick={() => connect({ connector: metaMask() })}
-              className="btn-primary w-full"
-            >
-              Connect MetaMask
-            </button>
+            <div className="flex justify-center">
+              <ConnectButton label="Connect Wallet" />
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800/50 justify-center">
