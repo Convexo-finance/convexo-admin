@@ -4,6 +4,15 @@ All notable changes to the admin panel are documented here.
 
 ---
 
+## v1.7 — 2026-04-27
+
+### Contract wiring fix — signContract signature
+
+- `ContractsView`: fixed `handleSign` — `signContract(bytes32, bytes)` requires two args; now performs `personal_sign` via `connector.getProvider()` first, then passes `[docHashBytes, signature]` to the contract; previously only passed the hash (one arg), which would revert on-chain
+- `npx tsc --noEmit` passes with zero errors
+
+---
+
 ## v1.6 — 2026-04-27
 
 ### Phase 8 — Contracts write actions

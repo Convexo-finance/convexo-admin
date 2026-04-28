@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useChainId, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 import { getContractsForChain, getBlockExplorerUrl } from '@/lib/contracts/addresses';
 import { ContractSignerABI } from '@/lib/contracts/abis';
 import { useConvexoWrite } from '@/lib/hooks/useConvexoWrite';
@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export function ContractsView() {
+  const { address, connector } = useAccount();
   const chainId = useChainId();
   const contracts = getContractsForChain(chainId);
 
@@ -79,9 +80,15 @@ export function ContractsView() {
 
   const docHashBytes = lookupHash as `0x${string}`;
 
-  const handleSign = () => {
-    if (!contracts?.CONTRACT_SIGNER) return;
-    writeSign({ address: contracts.CONTRACT_SIGNER, abi: ContractSignerABI, functionName: 'signContract', args: [docHashBytes] });
+  const handleSign = async () => {
+    if (!contracts?.CONTRACT_SIGNER || !connector || !address) return;
+    try {
+      const provider = await connector.getProvider() as { request: (args: { method: string; params: unknown[] }) => Promise<`0x${string}`> };
+      const signature = await provider.request({ method: 'personal_sign', params: [docHashBytes, address] });
+      writeSign({ address: contracts.CONTRACT_SIGNER, abi: ContractSignerABI, functionName: 'signContract', args: [docHashBytes, signature] });
+    } catch (err: unknown) {
+      setWriteMsg((err as Error).message ?? 'Signing rejected');
+    }
   };
   const handleCancel = () => {
     if (!contracts?.CONTRACT_SIGNER) return;
