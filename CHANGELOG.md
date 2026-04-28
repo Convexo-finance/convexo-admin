@@ -4,6 +4,17 @@ All notable changes to the admin panel are documented here.
 
 ---
 
+## v1.8 — 2026-04-27
+
+### ContractsView — required signers panel + gated Sign button
+
+- Added `SignerRow` component: reads `hasSigned(hash, signerAddress)` on-chain per signer, shows signed/pending badge; highlights connected wallet with "(you)" label
+- Added `getRequiredSigners` + `hasSigned` reads to `ContractsView`; Sign button now only renders when the connected wallet is a required signer AND has not yet signed
+- `cancelContract` and `executeContract` remain always visible (admin has `DEFAULT_ADMIN_ROLE` / `VERIFIER_ROLE`)
+- `npx tsc --noEmit` passes with zero errors
+
+---
+
 ## v1.7 — 2026-04-27
 
 ### Contract wiring fix — signContract signature

@@ -16,6 +16,43 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
+function SignerRow({
+  signer,
+  documentHash,
+  contracts,
+  connectedAddress,
+}: {
+  signer: `0x${string}`;
+  documentHash: `0x${string}`;
+  contracts: ReturnType<typeof getContractsForChain>;
+  connectedAddress?: `0x${string}`;
+}) {
+  const { data: signed } = useReadContract({
+    address: contracts?.CONTRACT_SIGNER,
+    abi: ContractSignerABI,
+    functionName: 'hasSigned',
+    args: [documentHash, signer],
+  });
+  const isYou = connectedAddress?.toLowerCase() === signer.toLowerCase();
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className={`font-mono text-xs ${isYou ? 'text-purple-300' : 'text-gray-300'}`}>
+        {signer.slice(0, 10)}…{signer.slice(-8)}
+        {isYou && <span className="ml-1.5 text-purple-400">(you)</span>}
+      </span>
+      {signed ? (
+        <span className="flex items-center gap-1 text-xs text-emerald-400">
+          <CheckCircleIcon className="w-3.5 h-3.5" /> Signed
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-xs text-amber-400">
+          <ClockIcon className="w-3.5 h-3.5" /> Pending
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function ContractsView() {
   const { address, connector } = useAccount();
   const chainId = useChainId();
@@ -55,6 +92,29 @@ export function ContractsView() {
     args: lookupHash && lookupHash.startsWith('0x') ? [lookupHash as `0x${string}`] : undefined,
     query: { enabled: !!lookupHash && lookupHash.startsWith('0x') },
   });
+
+  // Required signers list + per-signer signed status
+  const { data: requiredSigners } = useReadContract({
+    address: contracts?.CONTRACT_SIGNER,
+    abi: ContractSignerABI,
+    functionName: 'getRequiredSigners',
+    args: lookupHash && lookupHash.startsWith('0x') ? [lookupHash as `0x${string}`] : undefined,
+    query: { enabled: !!lookupHash && lookupHash.startsWith('0x') },
+  });
+
+  const { data: adminHasSigned } = useReadContract({
+    address: contracts?.CONTRACT_SIGNER,
+    abi: ContractSignerABI,
+    functionName: 'hasSigned',
+    args: lookupHash && lookupHash.startsWith('0x') && address
+      ? [lookupHash as `0x${string}`, address]
+      : undefined,
+    query: { enabled: !!lookupHash && lookupHash.startsWith('0x') && !!address },
+  });
+
+  const signerList = (requiredSigners as `0x${string}`[] | undefined) ?? [];
+  const isAdminSigner = signerList.some(s => s.toLowerCase() === address?.toLowerCase());
+  const canSign = isAdminSigner && !adminHasSigned;
 
   // Write actions — sign / cancel / execute
   const { writeContract: writeSign, data: signHash, isPending: signing, reset: resetSign } = useConvexoWrite();
@@ -286,19 +346,39 @@ export function ContractsView() {
               ) : null}
             </div>
 
+            {/* Required Signers */}
+            {signerList.length > 0 && (
+              <div className="p-4 bg-gray-800/50 rounded-lg">
+                <p className="text-gray-400 text-sm mb-3">Required Signers ({signerList.length})</p>
+                <div className="space-y-2">
+                  {signerList.map((signer) => (
+                    <SignerRow
+                      key={signer}
+                      signer={signer}
+                      documentHash={lookupHash as `0x${string}`}
+                      contracts={contracts}
+                      connectedAddress={address}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Write actions — only when not executed/cancelled */}
             {!contractData[5] && !contractData[6] && (
               <div className="pt-4 border-t border-gray-700 space-y-3">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Admin Actions</p>
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleSign}
-                    disabled={signing || !!signHash}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-                  >
-                    {signing ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <CheckCircleIcon className="w-3.5 h-3.5" />}
-                    Sign
-                  </button>
+                  {canSign && (
+                    <button
+                      onClick={handleSign}
+                      disabled={signing || !!signHash}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      {signing ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <CheckCircleIcon className="w-3.5 h-3.5" />}
+                      Sign
+                    </button>
+                  )}
                   {!!isFullySigned && (
                     <div className="flex items-center gap-2">
                       <input
