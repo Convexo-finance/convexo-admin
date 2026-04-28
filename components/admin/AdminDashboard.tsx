@@ -5,105 +5,90 @@ import { apiFetch } from '@/lib/api';
 import {
   UserGroupIcon,
   ShieldCheckIcon,
+  BuildingOffice2Icon,
+  SparklesIcon,
   ArrowsRightLeftIcon,
   CurrencyDollarIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-interface StatsState {
+interface Stats {
   totalUsers: number;
-  pendingVerifications: number;
+  pendingKYC: number;
+  pendingKYB: number;
+  pendingCreditScore: number;
   pendingOTC: number;
-  rateCount: number;
+  activeRates: number;
 }
 
-interface UsersResponse {
-  total: number;
-}
-
-interface VerificationsResponse {
-  total: number;
-}
-
-interface OTCOrdersResponse {
-  total: number;
-}
-
-interface Rate {
-  pair: string;
-  rate: number;
-}
+interface TotalResponse { total: number }
+interface Rate { pair: string; rate: number }
 
 export function AdminDashboard() {
-  const [stats, setStats] = useState<StatsState>({
+  const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
-    pendingVerifications: 0,
+    pendingKYC: 0,
+    pendingKYB: 0,
+    pendingCreditScore: 0,
     pendingOTC: 0,
-    rateCount: 0,
+    activeRates: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      setError('');
-      try {
-        const [usersRes, verRes, otcRes, ratesRes] = await Promise.all([
-          apiFetch<UsersResponse>('/admin/users?offset=0&limit=1'),
-          apiFetch<VerificationsResponse>('/admin/verifications?status=PENDING&limit=1&offset=0'),
-          apiFetch<OTCOrdersResponse>('/admin/otc/orders?status=PENDING&limit=1&offset=0'),
-          apiFetch<Rate[]>('/rates'),
-        ]);
-
-        setStats({
-          totalUsers: usersRes.total ?? 0,
-          pendingVerifications: verRes.total ?? 0,
-          pendingOTC: otcRes.total ?? 0,
-          rateCount: Array.isArray(ratesRes) ? ratesRes.length : 0,
-        });
-      } catch (err: unknown) {
-        const e = err as Error;
-        setError(e.message ?? 'Failed to load stats');
-      } finally {
-        setLoading(false);
-      }
+  async function fetchStats() {
+    setLoading(true);
+    setError('');
+    try {
+      const [users, kyc, kyb, cs, otc, rates] = await Promise.all([
+        apiFetch<TotalResponse>('/admin/users?offset=0&limit=1'),
+        apiFetch<TotalResponse>('/admin/kyc/submissions?status=PENDING&limit=1&offset=0'),
+        apiFetch<TotalResponse>('/admin/kyb/submissions?status=PENDING&limit=1&offset=0'),
+        apiFetch<TotalResponse>('/admin/credit-score-requests?status=PENDING&limit=1&offset=0'),
+        apiFetch<TotalResponse>('/admin/otc/orders?status=PENDING&limit=1&offset=0'),
+        apiFetch<Rate[]>('/rates'),
+      ]);
+      setStats({
+        totalUsers:        users.total ?? 0,
+        pendingKYC:        kyc.total ?? 0,
+        pendingKYB:        kyb.total ?? 0,
+        pendingCreditScore: cs.total ?? 0,
+        pendingOTC:        otc.total ?? 0,
+        activeRates:       Array.isArray(rates) ? rates.length : 0,
+      });
+    } catch (err: unknown) {
+      setError((err as Error).message ?? 'Failed to load stats');
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchStats();
-  }, []);
+  useEffect(() => { fetchStats(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const statCards = [
-    {
-      label: 'Total Users',
-      value: stats.totalUsers,
-      icon: UserGroupIcon,
-      color: 'purple',
-    },
-    {
-      label: 'Pending Verifications',
-      value: stats.pendingVerifications,
-      icon: ShieldCheckIcon,
-      color: 'amber',
-    },
-    {
-      label: 'Pending OTC Orders',
-      value: stats.pendingOTC,
-      icon: ArrowsRightLeftIcon,
-      color: 'blue',
-    },
-    {
-      label: 'Active Rates',
-      value: stats.rateCount,
-      icon: CurrencyDollarIcon,
-      color: 'emerald',
-    },
-  ];
+  const cards = [
+    { label: 'Total Users',           value: stats.totalUsers,        icon: UserGroupIcon,       color: 'purple' },
+    { label: 'Pending KYC',           value: stats.pendingKYC,        icon: ShieldCheckIcon,     color: 'blue'   },
+    { label: 'Pending KYB',           value: stats.pendingKYB,        icon: BuildingOffice2Icon, color: 'cyan'   },
+    { label: 'Pending Credit Score',  value: stats.pendingCreditScore, icon: SparklesIcon,        color: 'purple' },
+    { label: 'Pending OTC Orders',    value: stats.pendingOTC,        icon: ArrowsRightLeftIcon, color: 'amber'  },
+    { label: 'Active Rates',          value: stats.activeRates,       icon: CurrencyDollarIcon,  color: 'emerald'},
+  ] as const;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-white mb-1">Admin Dashboard</h2>
-        <p className="text-gray-400 text-sm">Real-time overview of the Convexo platform.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-1">Dashboard</h2>
+          <p className="text-gray-400 text-sm">Real-time overview of the Convexo platform.</p>
+        </div>
+        <button
+          onClick={fetchStats}
+          disabled={loading}
+          className="p-2 text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
+          title="Refresh"
+        >
+          <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {error && (
@@ -112,25 +97,22 @@ export function AdminDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className="card p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">{card.label}</p>
-                  {loading ? (
-                    <div className="h-8 w-16 bg-gray-700 rounded mt-2 animate-pulse" />
-                  ) : (
-                    <p className="text-3xl font-bold text-white mt-1">{card.value}</p>
-                  )}
-                </div>
-                <Icon className={`w-12 h-12 text-${card.color}-400 opacity-50`} />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {cards.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="card p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">{label}</p>
+                {loading ? (
+                  <div className="h-8 w-14 bg-gray-700 rounded animate-pulse" />
+                ) : (
+                  <p className={`text-3xl font-bold text-${color}-400`}>{value}</p>
+                )}
               </div>
+              <Icon className={`w-10 h-10 text-${color}-400 opacity-30`} />
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

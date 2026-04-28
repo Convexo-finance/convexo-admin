@@ -25,23 +25,24 @@ convexo-admin/
 │   │       └── metadata/route.ts — Proxy: uploads NFT metadata JSON to Pinata (server-side PINATA_JWT)
 │   └── dashboard/
 │       ├── layout.tsx          — Auth guard: redirects to / if no JWT in localStorage
-│       └── page.tsx            — Main panel: sidebar nav + 8 tab views
+│       └── page.tsx            — Main panel: sidebar nav + 9 tab views
 ├── components/admin/
-│   ├── AdminDashboard.tsx      — Stats overview (users, verifications, OTC, rates)
-│   ├── UserManagement.tsx      — User list + profile inspection
-│   ├── VeriffVerificationSystem.tsx — KYC approval/rejection + LP_Individuals NFT mint
-│   ├── SumsubVerificationSystem.tsx — KYB approval/rejection + LP_Business NFT mint
-│   ├── NFTAdminPanel.tsx       — Direct LP NFT minting (bypass verification flow)
-│   ├── VaultsManagement.tsx    — Vault state reads via useReadContract
-│   ├── FundingManagement.tsx   — Business funding request review
-│   ├── TreasuriesView.tsx      — Pool/treasury on-chain state
-│   ├── ContractsView.tsx       — ContractSigner state view
+│   ├── AdminDashboard.tsx      — 6 KPI cards: total users, pending KYC/KYB/credit score, pending OTC, active rates
+│   ├── UserManagement.tsx      — User list (with admin role badge) + detail + AdminRolesPanel (grant/revoke)
+│   ├── KYCReviewSystem.tsx     — KYC individual submission review + LP_Individuals NFT mint (3-arg safeMint)
+│   ├── KYBReviewSystem.tsx     — KYB business submission review + LP_Business NFT mint (7-arg safeMint)
+│   ├── CreditScoreManagement.tsx — Credit score override + ECREDITSCORING NFT mint (5-arg safeMint)
+│   ├── OTCOrdersManagement.tsx — OTC order list + status progression (PENDING→CONFIRMED→IN_PROGRESS→COMPLETED)
+│   ├── FundingManagement.tsx   — Business funding request review (approve/reject/notes)
+│   ├── VaultsManagement.tsx    — Vault list (expand-in-place detail) + register form (POST /admin/vaults)
+│   ├── ContractsView.tsx       — ContractSigner on-chain view + sign/cancel/execute write actions
 │   └── index.tsx               — Barrel exports
 ├── lib/
-│   ├── api.ts                  — apiFetch + JWT header + silent 401 refresh (key: convexo_admin_jwt)
+│   ├── api.ts                  — apiFetch + apiDownload + apiUpload + silent 401 refresh (key: convexo_admin_jwt)
 │   ├── auth.ts                 — signInAdmin() / signOutAdmin() via SIWE personal_sign
 │   ├── wagmi.ts                — getDefaultConfig (RainbowKit v2 — Base, Mainnet, Sepolia)
 │   ├── config/pinata.ts        — IPFS helpers + NFT metadata builders (synced from convexo_frontend)
+│   ├── config/network.ts       — PRIMARY_CHAIN_ID / PRIMARY_CHAIN_NAME from NEXT_PUBLIC_NETWORK_MODE
 │   ├── contracts/
 │   │   ├── addresses.ts        — Multi-chain contract addresses (synced from convexo_frontend)
 │   │   ├── abis.ts             — Contract ABIs (synced from convexo_frontend)
@@ -166,34 +167,55 @@ Backend `requireAdmin` middleware checks `AdminRole` table (seeded from `ADMIN_W
 
 ---
 
-## Admin capabilities
+## Admin capabilities (9 tabs)
 
 | Tab | API | Notes |
 |-----|-----|-------|
-| Dashboard | `GET /admin/users`, `GET /admin/verifications`, `GET /admin/otc/orders`, `GET /rates` | Stats overview |
-| Users | `GET /admin/users`, `GET /admin/users/:id` | View + manage users |
-| Verifications | `GET /admin/verifications`, `PUT /admin/verifications/:id/status`, `PUT /admin/verifications/:id/nft` | Approve/reject KYC/KYB + mint LP NFT |
-| NFT Management | On-chain reads + `useConvexoWrite` → `mintTo` | Mint LP_Individuals / LP_Business NFTs |
-| Vaults | On-chain reads via `useReadContract` | View vault states |
+| Dashboard | `GET /admin/users`, `/admin/kyc/submissions?status=PENDING`, `/admin/kyb/submissions?status=PENDING`, `/admin/credit-score-requests?status=PENDING`, `/admin/otc/orders?status=PENDING`, `/rates` | 6 KPI cards + refresh button |
+| Users | `GET /admin/users`, `GET /admin/users/:id`, `POST /admin/roles`, `DELETE /admin/roles/:userId` | User list with admin role badge + AdminRolesPanel (grant/revoke VIEWER/VERIFIER/SUPER_ADMIN) |
+| KYC Review | `GET /admin/kyc/submissions`, `PATCH /admin/kyc/submissions/:id/status`, `GET /admin/submissions/documents/:docId` | Document viewer, approve/reject, LP_Individuals NFT mint + auto-record |
+| KYB Review | `GET /admin/kyb/submissions`, `PATCH /admin/kyb/submissions/:id/status`, `GET /admin/submissions/documents/:docId` | Same as KYC but for businesses — LP_Business NFT mint (7-arg safeMint) |
+| Credit Score | `GET /admin/credit-score-requests`, `PUT /admin/credit-score-requests/:id/result`, `PUT /admin/credit-score-requests/:id/nft` | Score override, ECREDITSCORING NFT mint, auto-record direct to credit score request |
+| OTC Orders | `GET /admin/otc/orders`, `PUT /admin/otc/orders/:id/status` | Status progression buttons, notes field |
 | Funding | `GET /admin/funding/requests`, `PUT /admin/funding/requests/:id/review` | Approve/reject funding requests |
-| Treasuries | On-chain reads | View pool state |
-| Contracts | On-chain reads | View ContractSigner state |
+| Vaults | `GET /vaults`, `POST /admin/vaults` | Vault list + register form for on-chain deployed vaults |
+| Contracts | On-chain reads + `signContract` / `cancelContract` / `executeContract` | ContractSigner lookup + write actions |
 
 ---
 
 ## Backend API (admin routes)
 
-All require JWT + `AdminRole` (VIEWER or VERIFIER level):
+All require JWT + `AdminRole`. Role levels: VIEWER (read-only) < VERIFIER (approve/reject) < SUPER_ADMIN (full access).
 
 ```
-GET  /admin/users                          — list all users
-GET  /admin/users/:id                      — user detail
-GET  /admin/verifications                  — list verifications (filterable by status)
-PUT  /admin/verifications/:id/status       — update verification status
-PUT  /admin/verifications/:id/nft          — mint LP NFT post-approval
-GET  /admin/otc/orders                     — list OTC orders
-GET  /admin/funding/requests               — list all funding requests
-PUT  /admin/funding/requests/:id/review    — approve/reject funding request
+GET    /admin/users                                — list users (includes adminRole badge data)
+GET    /admin/users/:id                            — user detail + verifications
+POST   /admin/roles                                — grant admin role {userId, role} (SUPER_ADMIN)
+DELETE /admin/roles/:userId                        — revoke admin role (SUPER_ADMIN)
+
+GET    /admin/kyc/submissions                      — list KYC individual submissions (VIEWER+)
+GET    /admin/kyc/submissions/:id                  — single KYC submission
+PATCH  /admin/kyc/submissions/:id/status           — approve/reject {status, reviewNote} (VERIFIER+)
+GET    /admin/kyb/submissions                      — list KYB business submissions (VIEWER+)
+PATCH  /admin/kyb/submissions/:id/status           — approve/reject (VERIFIER+)
+GET    /admin/submissions/documents/:docId         — stream document file (VIEWER+)
+
+GET    /admin/credit-score-requests                — list credit score requests (VIEWER+)
+PUT    /admin/credit-score-requests/:id/result     — override score {approved, score, rating, ...} (VERIFIER+)
+PUT    /admin/credit-score-requests/:id/nft        — record NFT token ID {nftTokenId} (VERIFIER+)
+
+GET    /admin/otc/orders                           — list OTC orders (VIEWER+)
+PUT    /admin/otc/orders/:id/status                — update status {status, notes} (VERIFIER+)
+
+GET    /admin/funding/requests                     — list funding requests (VIEWER+)
+PUT    /admin/funding/requests/:id/review          — approve/reject (VERIFIER+)
+
+GET    /vaults                                     — list registered vaults (any auth)
+POST   /admin/vaults                               — register on-chain vault in DB (VERIFIER+)
+
+GET    /admin/verifications                        — legacy verification list (VIEWER+)
+PUT    /admin/verifications/:id/status             — legacy update status (VERIFIER+)
+PUT    /admin/verifications/:id/nft                — record NFT tokenId on verification (VERIFIER+)
 ```
 
 ---
@@ -262,17 +284,17 @@ Do not skip this. Do not batch multiple sessions into one entry. Each session ge
 
 ---
 
-## Phase status
+## Phase status (v1.6 — 2026-04-27)
 
-| Feature | Status |
-|---------|--------|
-| Login (SIWE — RainbowKit multi-wallet) | ✅ Complete |
-| Dashboard stats | ✅ Complete |
-| User management | ✅ Complete |
-| Veriff KYC approval + NFT mint | ✅ Complete |
-| Sumsub KYB approval + NFT mint | ✅ Complete |
-| NFT admin panel (LP minting) | ✅ Complete |
-| Vaults overview | ✅ Complete |
-| Funding request review | ✅ Complete |
-| Treasuries view | ✅ Complete |
-| Contracts view | ✅ Complete |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Login (SIWE — RainbowKit multi-wallet) | ✅ Complete | |
+| Dashboard — 6 KPI cards | ✅ Complete | Pending KYC/KYB/Credit Score/OTC + total users + active rates |
+| Users — list + detail + AdminRoles | ✅ Complete | Role badge on list; grant/revoke VIEWER/VERIFIER/SUPER_ADMIN |
+| KYC Review — document viewer + NFT mint | ✅ Complete | LP_Individuals 3-arg safeMint, auto-tokenId record |
+| KYB Review — document viewer + NFT mint | ✅ Complete | LP_Business 7-arg safeMint, BusinessType uint8 mapping |
+| Credit Score — override + NFT mint | ✅ Complete | ECREDITSCORING 5-arg safeMint, CreditTier from score |
+| OTC Orders — status management | ✅ Complete | Status progression with valid-next-state buttons |
+| Funding request review | ✅ Complete | |
+| Vaults — list + register | ✅ Complete | Expand-in-place detail, register form for on-chain vaults |
+| Contracts — view + sign/cancel/execute | ✅ Complete | Write actions via useConvexoWrite |

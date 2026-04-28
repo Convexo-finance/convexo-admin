@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useChainId, useReadContract } from 'wagmi';
-import { getContractsForChain } from '@/lib/contracts/addresses';
+import { useChainId, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { getContractsForChain, getBlockExplorerUrl } from '@/lib/contracts/addresses';
 import { ContractSignerABI } from '@/lib/contracts/abis';
+import { useConvexoWrite } from '@/lib/hooks/useConvexoWrite';
 import {
   DocumentTextIcon,
   CheckCircleIcon,
@@ -12,6 +13,7 @@ import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 export function ContractsView() {
@@ -53,10 +55,41 @@ export function ContractsView() {
     query: { enabled: !!lookupHash && lookupHash.startsWith('0x') },
   });
 
+  // Write actions — sign / cancel / execute
+  const { writeContract: writeSign, data: signHash, isPending: signing, reset: resetSign } = useConvexoWrite();
+  const { writeContract: writeCancel, data: cancelHash, isPending: cancelling, reset: resetCancel } = useConvexoWrite();
+  const { writeContract: writeExecute, data: execHash, isPending: executing, reset: resetExec } = useConvexoWrite();
+  const [execVaultId, setExecVaultId] = useState('0');
+  const [writeMsg, setWriteMsg] = useState('');
+
+  const { isSuccess: signOk }   = useWaitForTransactionReceipt({ hash: signHash });
+  const { isSuccess: cancelOk } = useWaitForTransactionReceipt({ hash: cancelHash });
+  const { isSuccess: execOk }   = useWaitForTransactionReceipt({ hash: execHash });
+
+  if (signOk && !writeMsg)   setWriteMsg('Contract signed successfully.');
+  if (cancelOk && !writeMsg) setWriteMsg('Contract cancelled successfully.');
+  if (execOk && !writeMsg)   setWriteMsg('Contract executed successfully.');
+
   const handleLookup = () => {
     if (lookupHash && lookupHash.startsWith('0x')) {
+      resetSign(); resetCancel(); resetExec(); setWriteMsg('');
       refetchLookup();
     }
+  };
+
+  const docHashBytes = lookupHash as `0x${string}`;
+
+  const handleSign = () => {
+    if (!contracts?.CONTRACT_SIGNER) return;
+    writeSign({ address: contracts.CONTRACT_SIGNER, abi: ContractSignerABI, functionName: 'signContract', args: [docHashBytes] });
+  };
+  const handleCancel = () => {
+    if (!contracts?.CONTRACT_SIGNER) return;
+    writeCancel({ address: contracts.CONTRACT_SIGNER, abi: ContractSignerABI, functionName: 'cancelContract', args: [docHashBytes] });
+  };
+  const handleExecute = () => {
+    if (!contracts?.CONTRACT_SIGNER) return;
+    writeExecute({ address: contracts.CONTRACT_SIGNER, abi: ContractSignerABI, functionName: 'executeContract', args: [docHashBytes, BigInt(execVaultId || '0')] });
   };
 
   const getAgreementTypeName = (type: number) => {
@@ -245,6 +278,60 @@ export function ContractsView() {
                 </div>
               ) : null}
             </div>
+
+            {/* Write actions — only when not executed/cancelled */}
+            {!contractData[5] && !contractData[6] && (
+              <div className="pt-4 border-t border-gray-700 space-y-3">
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Admin Actions</p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleSign}
+                    disabled={signing || !!signHash}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {signing ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <CheckCircleIcon className="w-3.5 h-3.5" />}
+                    Sign
+                  </button>
+                  {!!isFullySigned && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={execVaultId}
+                        onChange={(e) => setExecVaultId(e.target.value)}
+                        placeholder="Vault ID (0 if none)"
+                        className="w-32 p-1.5 bg-gray-800 border border-gray-700 rounded text-white text-xs focus:border-emerald-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={handleExecute}
+                        disabled={executing || !!execHash}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                      >
+                        {executing ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <CheckCircleIcon className="w-3.5 h-3.5" />}
+                        Execute
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleCancel}
+                    disabled={cancelling || !!cancelHash}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {cancelling ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <XMarkIcon className="w-3.5 h-3.5" />}
+                    Cancel
+                  </button>
+                </div>
+                {(signHash || cancelHash || execHash) && (
+                  <a
+                    href={`${getBlockExplorerUrl(chainId)}/tx/${signHash ?? cancelHash ?? execHash}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-blue-400 hover:text-blue-300 underline font-mono"
+                  >
+                    {(signHash ?? cancelHash ?? execHash)?.slice(0, 14)}… →
+                  </a>
+                )}
+                {writeMsg && <p className="text-xs text-emerald-400">{writeMsg}</p>}
+              </div>
+            )}
           </div>
         ) : lookupHash && lookupHash.startsWith('0x') ? (
           <div className="p-4 bg-gray-800/50 rounded-lg">

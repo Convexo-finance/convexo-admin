@@ -157,11 +157,13 @@ export const CONTRACTS: Record<ChainId, ChainContracts> = {
     QUOTER:           '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba',
   },
 
-  // ── Ethereum Sepolia ─────────────────────────────────────────────────────────
+  // ── Ethereum Sepolia (v3.19 — devMode expiry guard, pool reseeded with both tokens) ───
   11155111: {
     CHAIN_ID: 11155111, CHAIN_NAME: 'Ethereum Sepolia',
     ...DETERMINISTIC,
-    PASSPORT_GATED_HOOK: '0xA4c7d0f1bb255460C7b3CBE9910318CB57Cb8A80',
+    CONVEXO_PASSPORT:   '0xCde95545f2446C2CfdDA7439493AD453014AC562',
+    REPUTATION_MANAGER: '0x28a9b3bA5ddf3D7542a2BCC00Bc7eC72363bEB8b',
+    PASSPORT_GATED_HOOK:'0xd3f980f48638783a8324ff99301028f08bda8a80',
     VAULT_FACTORY:       '0x3D0290F255D4eB1EFe1384618a827C2E26b0df67',
     USDC:             '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
     EURC:             DETERMINISTIC.ZERO,

@@ -77,3 +77,55 @@ export function clearTokens() {
   localStorage.removeItem(JWT_KEY);
   localStorage.removeItem('convexo_admin_refresh');
 }
+
+export async function apiUpload<T = unknown>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
+  const token = localStorage.getItem(JWT_KEY);
+
+  const doFetch = async (t: string | null) => {
+    const headers: Record<string, string> = {};
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    // No Content-Type — browser sets multipart/form-data with boundary automatically
+
+    const res = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: formData });
+
+    if (!res.ok) {
+      let body: { error?: string; message?: string; code?: string } = {};
+      try { body = await res.json(); } catch {}
+      throw new ApiError(body.error ?? body.message ?? `HTTP ${res.status}`, res.status, body.code);
+    }
+
+    return res.json() as Promise<T>;
+  };
+
+  try {
+    return await doFetch(token);
+  } catch (err) {
+    if (err instanceof ApiError && err.statusCode === 401) {
+      const newToken = await refreshToken();
+      if (newToken) return doFetch(newToken);
+    }
+    throw err;
+  }
+}
+
+export async function apiDownload(path: string): Promise<{ blob: Blob; contentType: string; filename: string }> {
+  const token = localStorage.getItem(JWT_KEY);
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!res.ok) {
+    throw new ApiError(`HTTP ${res.status}`, res.status);
+  }
+
+  const blob = await res.blob();
+  const contentType = res.headers.get('Content-Type') ?? 'application/octet-stream';
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="?([^";\n]+)"?/);
+  const filename = match?.[1] ?? 'document';
+
+  return { blob, contentType, filename };
+}

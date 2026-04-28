@@ -4,42 +4,54 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useChainId } from 'wagmi';
 import { getContractsForChain } from '@/lib/contracts/addresses';
+import { PRIMARY_CHAIN_ID, PRIMARY_CHAIN_NAME } from '@/lib/config/network';
 import { signOutAdmin } from '@/lib/auth';
 import {
   Cog6ToothIcon,
   UserGroupIcon,
   ShieldCheckIcon,
+  BuildingOffice2Icon,
+  SparklesIcon,
+  ArrowsRightLeftIcon,
   CubeIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  BuildingLibraryIcon,
   BanknotesIcon,
   ArrowRightStartOnRectangleIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UserManagement } from '@/components/admin/UserManagement';
-import { VeriffVerificationSystem } from '@/components/admin/VeriffVerificationSystem';
-import { SumsubVerificationSystem } from '@/components/admin/SumsubVerificationSystem';
+import { KYCReviewSystem } from '@/components/admin/KYCReviewSystem';
+import { KYBReviewSystem } from '@/components/admin/KYBReviewSystem';
+import { CreditScoreManagement } from '@/components/admin/CreditScoreManagement';
+import { OTCOrdersManagement } from '@/components/admin/OTCOrdersManagement';
 import { VaultsManagement } from '@/components/admin/VaultsManagement';
-import { TreasuriesView } from '@/components/admin/TreasuriesView';
 import { ContractsView } from '@/components/admin/ContractsView';
-import { NFTAdminPanel } from '@/components/admin/NFTAdminPanel';
 import FundingManagement from '@/components/admin/FundingManagement';
 
-type Tab = 'dashboard' | 'users' | 'verification' | 'nft' | 'vaults' | 'funding' | 'treasuries' | 'contracts';
-type VerifTab = 'veriff' | 'sumsub';
-type NftTab = 'lpIndividuals' | 'lpBusiness';
+type Tab =
+  | 'dashboard'
+  | 'users'
+  | 'kyc'
+  | 'kyb'
+  | 'creditScore'
+  | 'otc'
+  | 'funding'
+  | 'vaults'
+  | 'contracts';
 
 const tabs: { id: Tab; name: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'dashboard',    name: 'Dashboard',     icon: ChartBarIcon },
-  { id: 'users',        name: 'Users',          icon: UserGroupIcon },
-  { id: 'verification', name: 'Verifications',  icon: ShieldCheckIcon },
-  { id: 'nft',          name: 'NFT Management', icon: CubeIcon },
-  { id: 'vaults',       name: 'Vaults',         icon: CubeIcon },
-  { id: 'funding',      name: 'Funding',        icon: BanknotesIcon },
-  { id: 'treasuries',   name: 'Treasuries',     icon: BuildingLibraryIcon },
-  { id: 'contracts',    name: 'Contracts',      icon: DocumentTextIcon },
+  { id: 'dashboard',   name: 'Dashboard',     icon: ChartBarIcon },
+  { id: 'users',       name: 'Users',          icon: UserGroupIcon },
+  { id: 'kyc',         name: 'KYC Review',     icon: ShieldCheckIcon },
+  { id: 'kyb',         name: 'KYB Review',     icon: BuildingOffice2Icon },
+  { id: 'creditScore', name: 'Credit Score',   icon: SparklesIcon },
+  { id: 'otc',         name: 'OTC Orders',     icon: ArrowsRightLeftIcon },
+  { id: 'funding',     name: 'Funding',        icon: BanknotesIcon },
+  { id: 'vaults',      name: 'Vaults',         icon: CubeIcon },
+  { id: 'contracts',   name: 'Contracts',      icon: DocumentTextIcon },
 ];
 
 export default function DashboardPage() {
@@ -47,10 +59,9 @@ export default function DashboardPage() {
   const { address } = useAccount();
   const chainId = useChainId();
   const contracts = getContractsForChain(chainId);
+  const chainMismatch = chainId !== PRIMARY_CHAIN_ID;
 
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [verifTab, setVerifTab] = useState<VerifTab>('veriff');
-  const [nftTab, setNftTab] = useState<NftTab>('lpIndividuals');
   const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -68,12 +79,22 @@ export default function DashboardPage() {
             <Cog6ToothIcon className="w-7 h-7 text-purple-400" />
             <div>
               <h1 className="text-base font-bold text-white">Convexo Admin</h1>
-              <p className="text-xs text-gray-500">{contracts?.CHAIN_NAME ?? 'Unknown chain'}</p>
+              <p className="text-xs text-gray-500">{contracts?.CHAIN_NAME ?? PRIMARY_CHAIN_NAME}</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        {chainMismatch && (
+          <div className="mx-3 mt-3 px-3 py-2 rounded-lg bg-amber-900/30 border border-amber-700/40 flex items-start gap-2">
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-300">
+              Wallet on wrong chain. Expected{' '}
+              <span className="font-semibold">{PRIMARY_CHAIN_NAME}</span>.
+            </p>
+          </div>
+        )}
+
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {tabs.map(({ id, name, icon: Icon }) => (
             <button
               key={id}
@@ -112,52 +133,15 @@ export default function DashboardPage() {
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto p-8">
-        {tab === 'dashboard' && <AdminDashboard />}
-        {tab === 'users' && <UserManagement />}
-
-        {tab === 'verification' && (
-          <div className="space-y-6">
-            <div className="border-b border-gray-800 flex gap-1">
-              {(['veriff', 'sumsub'] as VerifTab[]).map(v => (
-                <button
-                  key={v}
-                  onClick={() => setVerifTab(v)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    verifTab === v ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {v === 'veriff' ? 'Veriff KYC (Individuals)' : 'Sumsub KYB (Business)'}
-                </button>
-              ))}
-            </div>
-            {verifTab === 'veriff' && <VeriffVerificationSystem />}
-            {verifTab === 'sumsub' && <SumsubVerificationSystem />}
-          </div>
-        )}
-
-        {tab === 'nft' && (
-          <div className="space-y-6">
-            <div className="border-b border-gray-800 flex gap-1">
-              {(['lpIndividuals', 'lpBusiness'] as NftTab[]).map(n => (
-                <button
-                  key={n}
-                  onClick={() => setNftTab(n)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    nftTab === n ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {n === 'lpIndividuals' ? 'LP Individuals NFT' : 'LP Business NFT'}
-                </button>
-              ))}
-            </div>
-            <NFTAdminPanel type={nftTab} />
-          </div>
-        )}
-
-        {tab === 'vaults'     && <VaultsManagement />}
-        {tab === 'funding'    && <FundingManagement />}
-        {tab === 'treasuries' && <TreasuriesView />}
-        {tab === 'contracts'  && <ContractsView />}
+        {tab === 'dashboard'   && <AdminDashboard />}
+        {tab === 'users'       && <UserManagement />}
+        {tab === 'kyc'         && <KYCReviewSystem />}
+        {tab === 'kyb'         && <KYBReviewSystem />}
+        {tab === 'creditScore' && <CreditScoreManagement />}
+        {tab === 'otc'         && <OTCOrdersManagement />}
+        {tab === 'funding'     && <FundingManagement />}
+        {tab === 'vaults'      && <VaultsManagement />}
+        {tab === 'contracts'   && <ContractsView />}
       </main>
     </div>
   );
