@@ -35,7 +35,7 @@ convexo-admin/
 │   ├── OTCOrdersManagement.tsx — OTC order list + status progression (PENDING→CONFIRMED→IN_PROGRESS→COMPLETED)
 │   ├── FundingManagement.tsx   — Business funding request review (approve/reject/notes)
 │   ├── VaultsManagement.tsx    — Vault list (expand-in-place detail) + register form (POST /admin/vaults)
-│   ├── ContractsView.tsx       — ContractSigner on-chain view + sign/cancel/execute write actions
+│   ├── ContractsView.tsx       — ContractSigner lookup + required signers panel (per-signer signed/pending) + sign/cancel/execute; Sign button only shown when connected wallet is a required signer that hasn't signed yet; signContract requires personal_sign first (ECDSA sig passed as second arg)
 │   └── index.tsx               — Barrel exports
 ├── lib/
 │   ├── api.ts                  — apiFetch + apiDownload + apiUpload + silent 401 refresh (key: convexo_admin_jwt)
@@ -179,7 +179,7 @@ Backend `requireAdmin` middleware checks `AdminRole` table (seeded from `ADMIN_W
 | OTC Orders | `GET /admin/otc/orders`, `PUT /admin/otc/orders/:id/status` | Status progression buttons, notes field |
 | Funding | `GET /admin/funding/requests`, `PUT /admin/funding/requests/:id/review` | Approve/reject funding requests |
 | Vaults | `GET /vaults`, `POST /admin/vaults` | Vault list + register form for on-chain deployed vaults |
-| Contracts | On-chain reads + `signContract` / `cancelContract` / `executeContract` | ContractSigner lookup + write actions |
+| Contracts | On-chain reads + `signContract` / `cancelContract` / `executeContract` | ContractSigner lookup; required signers list with per-signer signed/pending badge; Sign only shown when connected wallet is a required signer and hasn't signed; `signContract(bytes32, bytes)` — personal_sign first, then pass both args; Cancel = initiator or DEFAULT_ADMIN_ROLE; Execute = VERIFIER_ROLE |
 
 ---
 
@@ -297,4 +297,4 @@ Do not skip this. Do not batch multiple sessions into one entry. Each session ge
 | OTC Orders — status management | ✅ Complete | Status progression with valid-next-state buttons |
 | Funding request review | ✅ Complete | |
 | Vaults — list + register | ✅ Complete | Expand-in-place detail, register form for on-chain vaults |
-| Contracts — view + sign/cancel/execute | ✅ Complete | Write actions via useConvexoWrite |
+| Contracts — view + sign/cancel/execute | ✅ Complete | Required signers panel; Sign gated on wallet membership + hasSigned check; signContract passes ECDSA sig |
