@@ -31,7 +31,7 @@ convexo-admin/
 │   ├── UserManagement.tsx      — User list (with admin role badge) + detail + AdminRolesPanel (grant/revoke)
 │   ├── KYCReviewSystem.tsx     — KYC individual submission review + LP_Individuals NFT mint (3-arg safeMint)
 │   ├── KYBReviewSystem.tsx     — KYB business submission review + LP_Business NFT mint (7-arg safeMint)
-│   ├── CreditScoreManagement.tsx — Credit score override + ECREDITSCORING NFT mint (5-arg safeMint)
+│   ├── CreditScoreManagement.tsx — Credit score override + ECREDITSCORING NFT mint (6-arg safeMint)
 │   ├── OTCOrdersManagement.tsx — OTC order list + status progression (PENDING→CONFIRMED→IN_PROGRESS→COMPLETED)
 │   ├── FundingManagement.tsx   — Business funding request review (approve/reject/notes)
 │   ├── VaultsManagement.tsx    — Vault list (expand-in-place detail) + register form (POST /admin/vaults)
@@ -175,7 +175,7 @@ Backend `requireAdmin` middleware checks `AdminRole` table (seeded from `ADMIN_W
 | Users | `GET /admin/users`, `GET /admin/users/:id`, `POST /admin/roles`, `DELETE /admin/roles/:userId` | User list with admin role badge + AdminRolesPanel (grant/revoke VIEWER/VERIFIER/SUPER_ADMIN) |
 | KYC Review | `GET /admin/kyc/submissions`, `PATCH /admin/kyc/submissions/:id/status`, `GET /admin/submissions/documents/:docId` | Document viewer, approve/reject, LP_Individuals NFT mint + auto-record |
 | KYB Review | `GET /admin/kyb/submissions`, `PATCH /admin/kyb/submissions/:id/status`, `GET /admin/submissions/documents/:docId` | Same as KYC but for businesses — LP_Business NFT mint (7-arg safeMint) |
-| Credit Score | `GET /admin/credit-score-requests`, `PUT /admin/credit-score-requests/:id/result`, `PUT /admin/credit-score-requests/:id/nft` | Score override, ECREDITSCORING NFT mint, auto-record direct to credit score request |
+| Credit Score | `GET /admin/credit-score-requests`, `PUT /admin/credit-score-requests/:id/result`, `PUT /admin/credit-score-requests/:id/nft` | Score override, ECREDITSCORING NFT mint (6-arg safeMint), auto-record direct to credit score request |
 | OTC Orders | `GET /admin/otc/orders`, `PUT /admin/otc/orders/:id/status` | Status progression buttons, notes field |
 | Funding | `GET /admin/funding/requests`, `PUT /admin/funding/requests/:id/review` | Approve/reject funding requests |
 | Vaults | `GET /vaults`, `POST /admin/vaults` | Vault list + register form for on-chain deployed vaults |
@@ -293,7 +293,7 @@ Do not skip this. Do not batch multiple sessions into one entry. Each session ge
 | Users — list + detail + AdminRoles | ✅ Complete | Role badge on list; grant/revoke VIEWER/VERIFIER/SUPER_ADMIN |
 | KYC Review — document viewer + NFT mint | ✅ Complete | LP_Individuals 3-arg safeMint, auto-tokenId record |
 | KYB Review — document viewer + NFT mint | ✅ Complete | LP_Business 7-arg safeMint, BusinessType uint8 mapping |
-| Credit Score — override + NFT mint | ✅ Complete | ECREDITSCORING 5-arg safeMint, CreditTier from score |
+| Credit Score — override + NFT mint | ✅ Complete | ECREDITSCORING 6-arg safeMint, CreditTier from score |
 | OTC Orders — status management | ✅ Complete | Status progression with valid-next-state buttons |
 | Funding request review | ✅ Complete | |
 | Vaults — list + register | ✅ Complete | Expand-in-place detail, register form for on-chain vaults |

@@ -1,5 +1,5 @@
 {
-  "version": "3.17",
+  "version": "3.21",
   "description": "Convexo Protocol ABIs",
   "contracts": {
     "ContractSigner": [
@@ -1069,6 +1069,19 @@
             "internalType": "uint256"
           }
         ],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "clearIdentifier",
+        "inputs": [
+          {
+            "name": "identifierHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ],
+        "outputs": [],
         "stateMutability": "nonpayable"
       },
       {
@@ -4863,6 +4876,426 @@
         "inputs": []
       }
     ],
+    "ManualPriceAggregator": [
+      {
+        "type": "constructor",
+        "inputs": [
+          {
+            "name": "admin",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "decimals_",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "description_",
+            "type": "string",
+            "internalType": "string"
+          }
+        ],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "DEFAULT_ADMIN_ROLE",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "PRICE_SETTER_ROLE",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "decimals",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "",
+            "type": "uint8",
+            "internalType": "uint8"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "description",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "",
+            "type": "string",
+            "internalType": "string"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "getRoleAdmin",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "getRoundData",
+        "inputs": [
+          {
+            "name": "_roundId",
+            "type": "uint80",
+            "internalType": "uint80"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "roundId",
+            "type": "uint80",
+            "internalType": "uint80"
+          },
+          {
+            "name": "answer",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "startedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "updatedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "answeredInRound",
+            "type": "uint80",
+            "internalType": "uint80"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "grantRole",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "account",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "hasRole",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "account",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "latestRoundData",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "roundId",
+            "type": "uint80",
+            "internalType": "uint80"
+          },
+          {
+            "name": "answer",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "startedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "updatedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "answeredInRound",
+            "type": "uint80",
+            "internalType": "uint80"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "renounceRole",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "callerConfirmation",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "revokeRole",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "account",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "setPrice",
+        "inputs": [
+          {
+            "name": "price",
+            "type": "int256",
+            "internalType": "int256"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
+        "name": "supportsInterface",
+        "inputs": [
+          {
+            "name": "interfaceId",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ],
+        "stateMutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "version",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ],
+        "stateMutability": "pure"
+      },
+      {
+        "type": "event",
+        "name": "PriceUpdated",
+        "inputs": [
+          {
+            "name": "roundId",
+            "type": "uint80",
+            "indexed": true,
+            "internalType": "uint80"
+          },
+          {
+            "name": "price",
+            "type": "int256",
+            "indexed": false,
+            "internalType": "int256"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "indexed": false,
+            "internalType": "uint256"
+          }
+        ],
+        "anonymous": false
+      },
+      {
+        "type": "event",
+        "name": "RoleAdminChanged",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "indexed": true,
+            "internalType": "bytes32"
+          },
+          {
+            "name": "previousAdminRole",
+            "type": "bytes32",
+            "indexed": true,
+            "internalType": "bytes32"
+          },
+          {
+            "name": "newAdminRole",
+            "type": "bytes32",
+            "indexed": true,
+            "internalType": "bytes32"
+          }
+        ],
+        "anonymous": false
+      },
+      {
+        "type": "event",
+        "name": "RoleGranted",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "indexed": true,
+            "internalType": "bytes32"
+          },
+          {
+            "name": "account",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          }
+        ],
+        "anonymous": false
+      },
+      {
+        "type": "event",
+        "name": "RoleRevoked",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "bytes32",
+            "indexed": true,
+            "internalType": "bytes32"
+          },
+          {
+            "name": "account",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          }
+        ],
+        "anonymous": false
+      },
+      {
+        "type": "error",
+        "name": "AccessControlBadConfirmation",
+        "inputs": []
+      },
+      {
+        "type": "error",
+        "name": "AccessControlUnauthorizedAccount",
+        "inputs": [
+          {
+            "name": "account",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "neededRole",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ]
+      },
+      {
+        "type": "error",
+        "name": "PriceMustBePositive",
+        "inputs": []
+      },
+      {
+        "type": "error",
+        "name": "PriceNotSet",
+        "inputs": []
+      }
+    ],
     "PassportGatedHook": [
       {
         "type": "constructor",
@@ -5991,6 +6424,19 @@
       },
       {
         "type": "function",
+        "name": "setReputationManager",
+        "inputs": [
+          {
+            "name": "newRM",
+            "type": "address",
+            "internalType": "address"
+          }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+      },
+      {
+        "type": "function",
         "name": "supportsInterface",
         "inputs": [
           {
@@ -6029,6 +6475,25 @@
             "type": "uint8",
             "indexed": false,
             "internalType": "enum ReputationManager.ReputationTier"
+          }
+        ],
+        "anonymous": false
+      },
+      {
+        "type": "event",
+        "name": "ReputationManagerUpdated",
+        "inputs": [
+          {
+            "name": "oldRM",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          },
+          {
+            "name": "newRM",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
           }
         ],
         "anonymous": false
@@ -10489,6 +10954,28 @@
       },
       {
         "type": "error",
+        "name": "AddressEmptyCode",
+        "inputs": [
+          {
+            "name": "target",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      },
+      {
+        "type": "error",
+        "name": "AddressInsufficientBalance",
+        "inputs": [
+          {
+            "name": "account",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      },
+      {
+        "type": "error",
         "name": "ERC20InsufficientAllowance",
         "inputs": [
           {
@@ -10575,6 +11062,11 @@
       },
       {
         "type": "error",
+        "name": "FailedInnerCall",
+        "inputs": []
+      },
+      {
+        "type": "error",
         "name": "MathOverflowedMulDiv",
         "inputs": []
       },
@@ -10582,6 +11074,17 @@
         "type": "error",
         "name": "ReentrancyGuardReentrantCall",
         "inputs": []
+      },
+      {
+        "type": "error",
+        "name": "SafeERC20FailedOperation",
+        "inputs": [
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
       }
     ],
     "VaultFactory": [

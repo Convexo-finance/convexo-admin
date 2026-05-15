@@ -4,6 +4,13 @@ All notable changes to the admin panel are documented here.
 
 ---
 
+## v1.7 — 2026-05-14
+- Synced `lib/contracts/addresses.ts` and `lib/contracts/abis.ts` from frontend (adds `MANUAL_PRICE_AGGREGATOR` field + ABI)
+- Copied `abis/ManualPriceAggregator.json` from frontend
+- Fixed CLAUDE.md doc typo: "5-arg safeMint" → "6-arg safeMint" for ECREDITSCORING (correct args: to, score, tier, maxLoanAmount, referenceId, uri)
+
+---
+
 ## v1.8 — 2026-04-27
 
 ### ContractsView — required signers panel + gated Sign button

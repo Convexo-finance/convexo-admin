@@ -26,6 +26,7 @@ import PoolRegistryABI from '@/abis/PoolRegistry.json';
 import PriceFeedManagerABI from '@/abis/PriceFeedManager.json';
 import PassportGatedHookABI from '@/abis/PassportGatedHook.json';
 import HookDeployerABI from '@/abis/HookDeployer.json';
+import ManualPriceAggregatorABI from '@/abis/ManualPriceAggregator.json';
 
 // Legacy aliases for backwards compatibility
 const ConvexoLPsABI = LPIndividualsABI;
@@ -63,6 +64,7 @@ export {
   PassportGatedHookABI,
   CompliantLPHookABI,        // → PassportGatedHookABI (alias)
   HookDeployerABI,
+  ManualPriceAggregatorABI,
 };
 
 // Type definitions for contract function returns
