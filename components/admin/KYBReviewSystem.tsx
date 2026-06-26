@@ -15,12 +15,25 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
+interface DocExtraction {
+  id: string;
+  docType: string;
+  status: string;
+  modelName?: string;
+  systemPromptVersion?: string;
+  extractedData?: Record<string, unknown> | null;
+  confidence?: Record<string, number> | null;
+  errorMessage?: string;
+  completedAt?: string;
+}
+
 interface KybDoc {
   id: string;
   fieldName: string;
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  extractions?: DocExtraction[];
 }
 
 type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -35,11 +48,28 @@ interface KybSubmission {
   incorporationNumber: string;
   officeCountry: string;
   companyType: string;
+  // Custom doc-upload flow (v3.27+) fields — present only for AI-assisted submissions
+  controllerFirstName?: string;
+  controllerLastName?: string;
+  controllerEmail?: string;
+  controllerPhone?: string;
+  controllerRelationship?: string;
+  controllerWallet?: string;
+  extractionVersion?: string;
   user: {
     walletAddress: string;
     businessProfile: { companyName: string; email?: string } | null;
   };
   documents: KybDoc[];
+}
+
+const LOW_CONFIDENCE = 0.7;
+
+function fmtValue(v: unknown): string {
+  if (v == null) return '—';
+  if (Array.isArray(v)) return `${v.length} item(s)`;
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
 }
 
 interface ListResponse { items: KybSubmission[]; total: number }
@@ -322,6 +352,64 @@ export function KYBReviewSystem() {
                   </div>
                 )}
               </div>
+
+              {/* Controller of account — custom flow only */}
+              {selected.controllerWallet && (
+                <div className="card p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    Controller of Account
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-600/20 text-purple-300">AI flow {selected.extractionVersion ?? ''}</span>
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                    <p className="text-gray-500">Name: <span className="text-gray-200">{[selected.controllerFirstName, selected.controllerLastName].filter(Boolean).join(' ') || '—'}</span></p>
+                    <p className="text-gray-500">Relationship: <span className="text-gray-200">{selected.controllerRelationship || '—'}</span></p>
+                    <p className="text-gray-500">Email: <span className="text-gray-200">{selected.controllerEmail || '—'}</span></p>
+                    <p className="text-gray-500">Phone: <span className="text-gray-200">{selected.controllerPhone || '—'}</span></p>
+                    <p className="text-gray-500 col-span-2">Wallet: <span className="font-mono text-gray-200 break-all">{selected.controllerWallet}</span></p>
+                  </div>
+                </div>
+              )}
+
+              {/* Claude-extracted data — extracted-vs-corrected diff */}
+              {selected.documents.some((d) => d.extractions?.length) && (
+                <div className="card p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    Claude Extraction
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-600/20 text-purple-300">read-only</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">What Claude read from each document. Compare against the values above (the user may have corrected them before submitting). Amber = low confidence.</p>
+                  {selected.documents.filter((d) => d.extractions?.length).map((doc) => {
+                    const ex = doc.extractions![0];
+                    const data = ex.extractedData ?? {};
+                    const conf = ex.confidence ?? {};
+                    return (
+                      <div key={doc.id} className="rounded-lg bg-gray-800/40 border border-gray-700 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-white">{doc.fieldName}</span>
+                          <span className="text-[10px] text-gray-500">{ex.modelName} · {ex.status}</span>
+                        </div>
+                        {ex.status === 'FAILED' ? (
+                          <p className="text-xs text-red-400">Extraction failed: {ex.errorMessage}</p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                            {Object.entries(data).map(([k, v]) => {
+                              const low = conf[k] !== undefined && conf[k] < LOW_CONFIDENCE;
+                              return (
+                                <div key={k} className="flex items-center justify-between gap-2 text-xs">
+                                  <span className="text-gray-500 truncate">{k}</span>
+                                  <span className={`truncate ${low ? 'text-amber-300' : 'text-gray-200'}`} title={low ? `low confidence (${conf[k].toFixed(2)})` : undefined}>
+                                    {fmtValue(v)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Review form — PENDING only */}
               {selected.status === 'PENDING' && (

@@ -14,7 +14,19 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-type ScoreStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'NFT_REQUESTED' | 'COMPLETE';
+type ScoreStatus =
+  | 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'NFT_REQUESTED' | 'COMPLETE'
+  // Custom doc-upload flow (v3.28) draft lifecycle
+  | 'DRAFT' | 'EXTRACTING' | 'READY_FOR_REVIEW' | 'SCORE_COMPUTED' | 'MINTED';
+
+interface CreditDoc {
+  id: string;
+  fieldName: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  extractions?: { id: string; docType: string; status: string; extractedData?: Record<string, unknown> | null; confidence?: Record<string, number> | null }[];
+}
 
 interface CreditScoreRequest {
   id: string;
@@ -35,6 +47,13 @@ interface CreditScoreRequest {
   yearsOperating?: number | null;
   existingDebt?: string | null;
   period?: string | null;
+  // Custom doc-upload flow (v3.28) — preliminary algorithmic score
+  computedScore?: number | null;
+  computedTier?: string | null;
+  extractedIndicators?: Record<string, number | null> | null;
+  extractedLineItems?: Record<string, number> | null;
+  extractionVersion?: string | null;
+  documents?: CreditDoc[];
   createdAt: string;
   user: {
     walletAddress: string;
@@ -61,15 +80,35 @@ function parseMaxLoan(val: string | null | undefined): bigint {
 }
 
 const STATUS_STYLE: Record<ScoreStatus, string> = {
-  PENDING:       'bg-amber-900/30 text-amber-300',
-  UNDER_REVIEW:  'bg-blue-900/30 text-blue-300',
-  APPROVED:      'bg-emerald-900/30 text-emerald-300',
-  REJECTED:      'bg-red-900/30 text-red-300',
-  NFT_REQUESTED: 'bg-purple-900/30 text-purple-300',
-  COMPLETE:      'bg-gray-700 text-gray-300',
+  PENDING:          'bg-amber-900/30 text-amber-300',
+  UNDER_REVIEW:     'bg-blue-900/30 text-blue-300',
+  APPROVED:         'bg-emerald-900/30 text-emerald-300',
+  REJECTED:         'bg-red-900/30 text-red-300',
+  NFT_REQUESTED:    'bg-purple-900/30 text-purple-300',
+  COMPLETE:         'bg-gray-700 text-gray-300',
+  DRAFT:            'bg-gray-800 text-gray-400',
+  EXTRACTING:       'bg-purple-900/30 text-purple-300',
+  READY_FOR_REVIEW: 'bg-blue-900/30 text-blue-300',
+  SCORE_COMPUTED:   'bg-cyan-900/30 text-cyan-300',
+  MINTED:           'bg-emerald-900/30 text-emerald-300',
 };
 
 const TIER_LABEL = ['None', 'Bronze', 'Silver', 'Gold', 'Platinum'];
+
+const INDICATOR_LABELS: Record<string, { label: string; pct?: boolean }> = {
+  currentRatio:            { label: 'Current ratio' },
+  debtToEquity:            { label: 'Debt / equity' },
+  grossMargin:             { label: 'Gross margin', pct: true },
+  ebitdaMargin:            { label: 'EBITDA margin', pct: true },
+  interestCoverage:        { label: 'Interest coverage' },
+  operatingCashFlowMargin: { label: 'Op. cash-flow margin', pct: true },
+  revenueGrowth:           { label: 'Revenue growth', pct: true },
+};
+
+function fmtIndicator(v: number | null | undefined, pct?: boolean): string {
+  if (v == null) return '—';
+  return pct ? `${(v * 100).toFixed(1)}%` : v.toFixed(2);
+}
 
 export function CreditScoreManagement() {
   const chainId = useChainId();
@@ -307,6 +346,46 @@ export function CreditScoreManagement() {
                   {selected.status.replace('_', ' ')}
                 </span>
               </div>
+
+              {/* Preliminary algorithmic score — custom doc-upload flow (v3.28) */}
+              {selected.computedScore != null && (
+                <div className="card p-4 border-cyan-700/20 bg-cyan-900/5 space-y-3">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    Preliminary Score (Claude extraction)
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-600/20 text-purple-300">AI flow {selected.extractionVersion ?? ''}</span>
+                  </h3>
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <span className="text-3xl font-bold text-cyan-300">{selected.computedScore}</span>
+                      <span className="text-xs text-gray-500"> / 100</span>
+                    </div>
+                    {selected.computedTier && (
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-cyan-900/30 text-cyan-300">{selected.computedTier}</span>
+                    )}
+                    <p className="text-[11px] text-gray-500">Algorithmic estimate — set the official 0–1000 score below; the on-chain tier comes from your override.</p>
+                  </div>
+                  {selected.extractedIndicators && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1">
+                      {Object.entries(INDICATOR_LABELS).map(([key, meta]) => (
+                        <div key={key} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">{meta.label}</span>
+                          <span className="text-gray-200">{fmtIndicator(selected.extractedIndicators?.[key], meta.pct)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {selected.documents?.some((d) => d.extractions?.length) && (
+                    <div className="pt-2 border-t border-gray-800 space-y-1">
+                      <p className="text-[11px] text-gray-500">Extracted statements:</p>
+                      {selected.documents.filter((d) => d.extractions?.length).map((d) => (
+                        <p key={d.id} className="text-xs text-gray-400">
+                          {d.fieldName} <span className="text-gray-600">· {d.extractions![0].status}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Financial metrics */}
               {(selected.annualRevenue || selected.netProfit || selected.totalAssets || selected.totalLiabilities) && (

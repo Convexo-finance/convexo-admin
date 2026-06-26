@@ -3,6 +3,11 @@
 Single source of truth for AI agents working on `convexo-admin/`.
 Read this before touching any file. Update it when you change architecture.
 
+> **Maintenance & standards:** repo-wide doc/run/deploy conventions live in the root
+> [`MAINTENANCE.md`](../MAINTENANCE.md). The admin login/logout flow (RainbowKit EOA → SIWE → JWT)
+> is specified in [`AUTH.md`](../AUTH.md) — read it before changing `lib/auth.ts` / `lib/api.ts`.
+> Run `npm run dev` (→ :3002, webpack only). Health: SIWE login → `/dashboard`, `tsc` clean.
+
 ---
 
 ## What this project is
@@ -292,8 +297,8 @@ Do not skip this. Do not batch multiple sessions into one entry. Each session ge
 | Dashboard — 6 KPI cards | ✅ Complete | Pending KYC/KYB/Credit Score/OTC + total users + active rates |
 | Users — list + detail + AdminRoles | ✅ Complete | Role badge on list; grant/revoke VIEWER/VERIFIER/SUPER_ADMIN |
 | KYC Review — document viewer + NFT mint | ✅ Complete | LP_Individuals 3-arg safeMint, auto-tokenId record |
-| KYB Review — document viewer + NFT mint | ✅ Complete | LP_Business 7-arg safeMint, BusinessType uint8 mapping |
-| Credit Score — override + NFT mint | ✅ Complete | ECREDITSCORING 6-arg safeMint, CreditTier from score |
+| KYB Review — document viewer + NFT mint | ✅ Complete | LP_Business 7-arg safeMint, BusinessType uint8 mapping. v1.9: "Controller of Account" + "Claude Extraction" read-only diff panels for AI doc-upload submissions |
+| Credit Score — override + NFT mint | ✅ Complete | ECREDITSCORING 6-arg safeMint, CreditTier from score. v1.9: "Preliminary Score (Claude extraction)" panel — computed score + 7 indicators + extracted statements; admin still sets official 0–1000 score |
 | OTC Orders — status management | ✅ Complete | Status progression with valid-next-state buttons |
 | Funding request review | ✅ Complete | |
 | Vaults — list + register | ✅ Complete | Expand-in-place detail, register form for on-chain vaults |

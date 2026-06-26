@@ -4,6 +4,14 @@ All notable changes to the admin panel are documented here.
 
 ---
 
+## v1.9 — 2026-06-19
+- `KYBReviewSystem.tsx` — added "Controller of Account" panel + "Claude Extraction" read-only diff (per-document extracted fields, amber = low confidence) for AI-assisted (custom doc-upload) submissions. Backend now returns `documents[].extractions` on `GET /admin/kyb/submissions/:id`
+- `CreditScoreManagement.tsx` — added "Preliminary Score (Claude extraction)" panel: computed 0–100 score + tier + 7 indicators + extracted-statements list. Admin still sets the official 0–1000 score/tier via the existing override form. Backend now returns `computedScore`/`computedTier`/`extractedIndicators` + `documents[].extractions` on the credit-score list
+- Extended `ScoreStatus` + `STATUS_STYLE` with the custom-flow draft statuses (DRAFT/EXTRACTING/READY_FOR_REVIEW/SCORE_COMPUTED/MINTED) so the "All" filter renders them
+- Supports KYB-CREDIT-SCORE-PLAN.md P6. No NFT mint logic changed.
+
+---
+
 ## v1.7 — 2026-05-14
 - Synced `lib/contracts/addresses.ts` and `lib/contracts/abis.ts` from frontend (adds `MANUAL_PRICE_AGGREGATOR` field + ABI)
 - Copied `abis/ManualPriceAggregator.json` from frontend
