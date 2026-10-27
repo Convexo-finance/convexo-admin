@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount, useChainId, useDisconnect } from 'wagmi';
 import { getContractsForChain } from '@/lib/contracts/addresses';
 import { PRIMARY_CHAIN_ID, PRIMARY_CHAIN_NAME } from '@/lib/config/network';
 import { signOutAdmin } from '@/lib/auth';
@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { address } = useAccount();
   const chainId = useChainId();
+  const { disconnectAsync } = useDisconnect();
   const contracts = getContractsForChain(chainId);
   const chainMismatch = chainId !== PRIMARY_CHAIN_ID;
 
@@ -66,8 +67,14 @@ export default function DashboardPage() {
 
   async function handleSignOut() {
     setSigningOut(true);
-    await signOutAdmin();
-    router.replace('/');
+    try {
+      await signOutAdmin();
+      // Fully tear down the privileged session: without disconnecting, one
+      // click on "Sign In" would re-authenticate the still-connected wallet.
+      await disconnectAsync().catch(() => {});
+    } finally {
+      router.replace('/');
+    }
   }
 
   return (

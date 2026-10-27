@@ -6,7 +6,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { signInAdmin } from '@/lib/auth';
-import { getToken } from '@/lib/api';
+import { hasAdminSession } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (getToken()) {
+    if (hasAdminSession()) {
       router.replace('/dashboard');
     }
   }, [router]);

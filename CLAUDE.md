@@ -164,11 +164,18 @@ Connect wallet (RainbowKit modal — MetaMask / WalletConnect / Coinbase / injec
 → POST /auth/verify { message, signature, address, chainId, authMethod: 'METAMASK' }
 → store accessToken in localStorage('convexo_admin_jwt')
 → store refreshToken in localStorage('convexo_admin_refresh')
-→ auto-refresh via 401 interceptor in lib/api.ts
+→ user.isAdmin false → immediate signOutAdmin() + "not an admin" error
 → redirect to /dashboard
+→ auto-refresh via 401 interceptor in lib/api.ts (stores BOTH rotated tokens; refresh is single-use)
+→ refresh fails / 403 "Admin access required" → tokens cleared → layout redirects to /
+Logout: POST /auth/logout { refreshToken } → clear tokens → wagmi disconnect
 ```
 
-Backend `requireAdmin` middleware checks `AdminRole` table (seeded from `ADMIN_WALLET_ADDRESSES` env var on first login). Only addresses in that env var can sign in — all others get 403.
+The SIWE `domain` is `window.location.host` — it must be listed in the backend's
+`SIWE_ALLOWED_DOMAINS` (e.g. `admin.convexo.xyz`, `localhost:3002`). Smart-contract wallets
+(Coinbase Smart Wallet) work too: the backend falls back to EIP-1271/ERC-6492 on the signed chain.
+
+Backend `requireAdmin` middleware checks `AdminRole` table (seeded from `ADMIN_WALLET_ADDRESSES` env var on first login). Any wallet can obtain a JWT, but non-admins are signed out at login and every `/admin/*` call returns 403.
 
 ---
 

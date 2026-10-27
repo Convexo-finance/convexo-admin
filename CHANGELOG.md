@@ -4,6 +4,12 @@ All notable changes to the admin panel are documented here.
 
 ---
 
+## v1.10 — 2026-10-26
+- `lib/api.ts` — refresh now stores the **rotated** refresh token (backend v3.31 makes refresh tokens single-use; keeping the old one would log admins out on the 2nd refresh); single-flight refresh with 10s timeout; 401-after-refresh or 403 "Admin access required" clears the session and fires `convexo-admin:session-cleared`; `apiDownload` gets the same 401-refresh; error messages use the backend `message` (was showing the class name "AppError"); `NEXT_PUBLIC_API_URL` trailing slash stripped, loud console error if unset in prod
+- `lib/auth.ts` — SIWE message carries `issuedAt` + 5-min `expirationTime` and a checksummed address; non-admin wallets are signed out immediately with a clear error instead of entering a dead shell; logout revokes the refresh token too
+- `app/dashboard/layout.tsx` — guard requires an `isAdmin` token that is still usable (valid access or refresh present) and redirects to `/` when the API clears the session
+- `app/dashboard/page.tsx` — sign-out also disconnects the wallet (`useDisconnect`)
+
 ## v1.9 — 2026-06-19
 - `KYBReviewSystem.tsx` — added "Controller of Account" panel + "Claude Extraction" read-only diff (per-document extracted fields, amber = low confidence) for AI-assisted (custom doc-upload) submissions. Backend now returns `documents[].extractions` on `GET /admin/kyb/submissions/:id`
 - `CreditScoreManagement.tsx` — added "Preliminary Score (Claude extraction)" panel: computed 0–100 score + tier + 7 indicators + extracted-statements list. Admin still sets the official 0–1000 score/tier via the existing override form. Backend now returns `computedScore`/`computedTier`/`extractedIndicators` + `documents[].extractions` on the credit-score list
